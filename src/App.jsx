@@ -1,11 +1,42 @@
 import { useState, useEffect } from 'react'
 import Login from './components/Login'
+import SignUp from './components/SignUp'
 import Home from './components/Home'
 
 function App() {
-  // Navigation / Login state (UI-only auth)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [userEmail, setUserEmail] = useState('')
+  // Load registered users database from localStorage
+  const [registeredUsers, setRegisteredUsers] = useState(() => {
+    const saved = localStorage.getItem('taskflow_registered_users')
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (e) {
+        console.error('Failed to parse registered users', e)
+        return []
+      }
+    }
+    return []
+  })
+
+  // Load current user session from localStorage
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('taskflow_current_user')
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (e) {
+        console.error('Failed to parse current user session', e)
+        return null
+      }
+    }
+    return null
+  })
+
+  // Current view routing state: 'login' | 'signup' | 'home'
+  const [currentView, setCurrentView] = useState(() => {
+    const savedUser = localStorage.getItem('taskflow_current_user')
+    return savedUser ? 'home' : 'login'
+  })
 
   // Theme state: defaults to dark for premium wow factor
   const [theme, setTheme] = useState(() => {
@@ -20,18 +51,58 @@ function App() {
     localStorage.setItem('theme', theme)
   }, [theme])
 
+  // Sync registered users to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('taskflow_registered_users', JSON.stringify(registeredUsers))
+  }, [registeredUsers])
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
   }
 
-  const handleLogin = (email) => {
-    setUserEmail(email)
-    setIsLoggedIn(true)
+  // Handle register request from SignUp component
+  // Returns error message if failed, or null if success
+  const handleRegister = (name, email, password) => {
+    const emailLower = email.toLowerCase().trim()
+    const emailExists = registeredUsers.some((u) => u.email.toLowerCase() === emailLower)
+    
+    if (emailExists) {
+      return 'Email is already registered'
+    }
+
+    const newUser = {
+      name: name.trim(),
+      email: emailLower,
+      password: password, // In a real app, this would be hashed on a backend
+    }
+
+    setRegisteredUsers((prev) => [...prev, newUser])
+    return null // success
+  }
+
+  // Handle login request from Login component
+  // Returns error message if failed, or null if success
+  const handleLogin = (email, password) => {
+    const emailLower = email.toLowerCase().trim()
+    const matchedUser = registeredUsers.find(
+      (u) => u.email.toLowerCase() === emailLower && u.password === password
+    )
+
+    if (!matchedUser) {
+      return 'Invalid email or password'
+    }
+
+    // Save session
+    localStorage.setItem('taskflow_current_user', JSON.stringify(matchedUser))
+    setCurrentUser(matchedUser)
+    setCurrentView('home')
+    return null // success
   }
 
   const handleLogout = () => {
-    setIsLoggedIn(false)
-    setUserEmail('')
+    localStorage.removeItem('taskflow_current_user')
+    setCurrentUser(null)
+    setCurrentView('login')
   }
 
   return (
@@ -42,15 +113,27 @@ function App() {
         <div className="gradient-shape-2"></div>
       </div>
 
-      {isLoggedIn ? (
+      {currentView === 'home' && currentUser && (
         <Home
-          email={userEmail}
+          currentUser={currentUser}
           onLogout={handleLogout}
           theme={theme}
           toggleTheme={toggleTheme}
         />
-      ) : (
-        <Login onLogin={handleLogin} />
+      )}
+
+      {currentView === 'login' && (
+        <Login
+          onLogin={handleLogin}
+          onNavigate={(view) => setCurrentView(view)}
+        />
+      )}
+
+      {currentView === 'signup' && (
+        <SignUp
+          onSignUp={handleRegister}
+          onNavigate={(view) => setCurrentView(view)}
+        />
       )}
     </>
   )

@@ -3,10 +3,13 @@ import TaskForm from './TaskForm'
 import SearchBar from './SearchBar'
 import TaskList from './TaskList'
 
-function Home({ email, onLogout, theme, toggleTheme }) {
+function Home({ currentUser, onLogout, theme, toggleTheme }) {
+  const email = currentUser?.email || ''
+  const name = currentUser?.name || ''
+
   // Load tasks from localStorage initially
   const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem('tasks')
+    const saved = localStorage.getItem(`tasks_${email}`)
     if (saved) {
       try {
         return JSON.parse(saved)
@@ -47,8 +50,10 @@ function Home({ email, onLogout, theme, toggleTheme }) {
 
   // Sync tasks with localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks))
-  }, [tasks])
+    if (email) {
+      localStorage.setItem(`tasks_${email}`, JSON.stringify(tasks))
+    }
+  }, [tasks, email])
 
   // Task Operations
   const addTask = (text, priority) => {
@@ -128,7 +133,7 @@ function Home({ email, onLogout, theme, toggleTheme }) {
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-            <span>{email}</span>
+            <span>{name || email}</span>
           </div>
 
           {/* Theme toggler */}
