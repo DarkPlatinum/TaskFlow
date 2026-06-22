@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 function TaskItem({ task, onToggleComplete, onDeleteTask }) {
   // Format the date/time string into a human-readable layout
@@ -17,6 +17,13 @@ function TaskItem({ task, onToggleComplete, onDeleteTask }) {
     }
   }
 
+  const [isExpanded, setIsExpanded] = useState(false)
+  const descriptionThreshold = 120
+  const shouldTruncate = task.description && task.description.length > descriptionThreshold
+  const displayDescription = shouldTruncate && !isExpanded
+    ? `${task.description.substring(0, descriptionThreshold)}...`
+    : task.description
+
   return (
     <div className={`task-card glass-container ${task.completed ? 'completed-task' : ''}`}>
       <div className="task-item-left">
@@ -34,6 +41,23 @@ function TaskItem({ task, onToggleComplete, onDeleteTask }) {
         {/* Task Text & Metadata */}
         <div className="task-content">
           <span className="task-text">{task.text}</span>
+          {task.description && (
+            <div className="task-description-container">
+              <p className="task-description">{displayDescription}</p>
+              {shouldTruncate && (
+                <button
+                  type="button"
+                  className="btn-toggle-expand"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsExpanded(!isExpanded)
+                  }}
+                >
+                  {isExpanded ? 'Show Less' : 'Show More'}
+                </button>
+              )}
+            </div>
+          )}
           <div className="task-meta">
             {/* Priority Badge */}
             <span className={`priority-badge ${task.priority}`}>

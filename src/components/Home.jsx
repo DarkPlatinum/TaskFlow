@@ -56,11 +56,12 @@ function Home({ currentUser, onLogout, theme, toggleTheme }) {
   }, [tasks, email])
 
   // Task Operations
-  const addTask = (text, priority) => {
+  const addTask = (text, priority, description) => {
     const newTask = {
       id: Date.now().toString(),
       text,
       priority,
+      description: description || '',
       completed: false,
       createdAt: new Date().toISOString(),
     }
@@ -86,9 +87,10 @@ function Home({ currentUser, onLogout, theme, toggleTheme }) {
 
   // Search & Filter Logic
   const filteredTasks = tasks.filter((task) => {
-    const matchesSearch = task.text
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
+    const matchesSearch =
+      task.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (task.description &&
+        task.description.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesPriority =
       priorityFilter === 'all' || task.priority === priorityFilter
     return matchesSearch && matchesPriority
